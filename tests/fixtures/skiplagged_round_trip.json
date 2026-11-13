@@ -1,0 +1,354 @@
+{
+ "searchUrl": "https://skiplagged.com/flights/HKG/LAX/2027-03-12/2027-04-09?fare_class=business&utm_source=mcp&utm_medium=ai&utm_campaign=skiplagged_mcp",
+ "flights": [
+  {
+   "type": "FlightCard",
+   "id": "HKG-LAX-2027-03-12-2027-04-09-trip=UA821,DL87",
+   "airlines": "United Airlines",
+   "departure": {
+    "airport": "HKG",
+    "dateTime": "2027-03-12T22:45:00+08:00"
+   },
+   "arrival": {
+    "airport": "LAX",
+    "dateTime": "2027-03-12T19:30:00-08:00"
+   },
+   "duration": "12h 45m",
+   "layovers": 0,
+   "price": {
+    "amount": 5349,
+    "currency": "USD",
+    "usdAmount": 5349
+   },
+   "deepLink": "https://skiplagged.com/flights/HKG/LAX/2027-03-12/2027-04-09?fare_class=business&utm_source=mcp&utm_medium=ai&utm_campaign=skiplagged_mcp#trip=UA821,DL87",
+   "attributes": [
+    "standard",
+    "nonstop"
+   ],
+   "returnFlight": {
+    "airlines": "Delta Air Lines",
+    "departure": {
+     "airport": "LAX",
+     "dateTime": "2027-04-09T23:15:00-07:00"
+    },
+    "arrival": {
+     "airport": "HKG",
+     "dateTime": "2027-04-11T05:05:00+08:00"
+    },
+    "duration": "14h 50m",
+    "layovers": 0,
+    "attributes": [
+     "standard",
+     "nonstop"
+    ]
+   }
+  },
+  {
+   "type": "FlightCard",
+   "id": "HKG-LAX-2027-03-12-2027-04-09-trip=UA153,DL87",
+   "airlines": "United Airlines",
+   "departure": {
+    "airport": "HKG",
+    "dateTime": "2027-03-12T11:25:00+08:00"
+   },
+   "arrival": {
+    "airport": "LAX",
+    "dateTime": "2027-03-12T08:05:00-08:00"
+   },
+   "duration": "12h 40m",
+   "layovers": 0,
+   "price": {
+    "amount": 5533,
+    "currency": "USD",
+    "usdAmount": 5533
+   },
+   "deepLink": "https://skiplagged.com/flights/HKG/LAX/2027-03-12/2027-04-09?fare_class=business&utm_source=mcp&utm_medium=ai&utm_campaign=skiplagged_mcp#trip=UA153,DL87",
+   "attributes": [
+    "standard",
+    "nonstop"
+   ],
+   "returnFlight": {
+    "airlines": "Delta Air Lines",
+    "departure": {
+     "airport": "LAX",
+     "dateTime": "2027-04-09T23:15:00-07:00"
+    },
+    "arrival": {
+     "airport": "HKG",
+     "dateTime": "2027-04-11T05:05:00+08:00"
+    },
+    "duration": "14h 50m",
+    "layovers": 0,
+    "attributes": [
+     "standard",
+     "nonstop"
+    ]
+   }
+  },
+  {
+   "type": "FlightCard",
+   "id": "HKG-LAX-2027-03-12-2027-04-09-trip=CA153,DL87",
+   "airlines": "Air China",
+   "departure": {
+    "airport": "HKG",
+    "dateTime": "2027-03-12T11:25:00+08:00"
+   },
+   "arrival": {
+    "airport": "LAX",
+    "dateTime": "2027-03-12T08:05:00-08:00"
+   },
+   "duration": "12h 40m",
+   "layovers": 0,
+   "price": {
+    "amount": 5781,
+    "currency": "USD",
+    "usdAmount": 5781
+   },
+   "deepLink": "https://skiplagged.com/flights/HKG/LAX/2027-03-12/2027-04-09?fare_class=business&utm_source=mcp&utm_medium=ai&utm_campaign=skiplagged_mcp#trip=CA153,DL87",
+   "attributes": [
+    "standard",
+    "nonstop"
+   ],
+   "returnFlight": {
+    "airlines": "Delta Air Lines",
+    "departure": {
+     "airport": "LAX",
+     "dateTime": "2027-04-09T23:15:00-07:00"
+    },
+    "arrival": {
+     "airport": "HKG",
+     "dateTime": "2027-04-11T05:05:00+08:00"
+    },
+    "duration": "14h 50m",
+    "layovers": 0,
+    "attributes": [
+     "standard",
+     "nonstop"
+    ]
+   }
+  },
+  {
+   "type": "FlightCard",
+   "id": "HKG-LAX-2027-03-12-2027-04-09-trip=CX880,DL87",
+   "airlines": "Cathay Pacific",
+   "departure": {
+    "airport": "HKG",
+    "dateTime": "2027-03-12T00:30:00+08:00"
+   },
+   "arrival": {
+    "airport": "LAX",
+    "dateTime": "2027-03-11T21:05:00-08:00"
+   },
+   "duration": "12h 35m",
+   "layovers": 0,
+   "price": {
+    "amount": 6305,
+    "currency": "USD",
+    "usdAmount": 6305
+   },
+   "deepLink": "https://skiplagged.com/flights/HKG/LAX/2027-03-12/2027-04-09?fare_class=business&utm_source=mcp&utm_medium=ai&utm_campaign=skiplagged_mcp#trip=CX880,DL87",
+   "attributes": [
+    "standard",
+    "nonstop"
+   ],
+   "returnFlight": {
+    "airlines": "Delta Air Lines",
+    "departure": {
+     "airport": "LAX",
+     "dateTime": "2027-04-09T23:15:00-07:00"
+    },
+    "arrival": {
+     "airport": "HKG",
+     "dateTime": "2027-04-11T05:05:00+08:00"
+    },
+    "duration": "14h 50m",
+    "layovers": 0,
+    "attributes": [
+     "standard",
+     "nonstop"
+    ]
+   }
+  },
+  {
+   "type": "FlightCard",
+   "id": "HKG-LAX-2027-03-12-2027-04-09-trip=CX884,DL87",
+   "airlines": "Cathay Pacific",
+   "departure": {
+    "airport": "HKG",
+    "dateTime": "2027-03-12T12:40:00+08:00"
+   },
+   "arrival": {
+    "airport": "LAX",
+    "dateTime": "2027-03-12T09:20:00-08:00"
+   },
+   "duration": "12h 40m",
+   "layovers": 0,
+   "price": {
+    "amount": 6691,
+    "currency": "USD",
+    "usdAmount": 6691
+   },
+   "deepLink": "https://skiplagged.com/flights/HKG/LAX/2027-03-12/2027-04-09?fare_class=business&utm_source=mcp&utm_medium=ai&utm_campaign=skiplagged_mcp#trip=CX884,DL87",
+   "attributes": [
+    "standard",
+    "nonstop"
+   ],
+   "returnFlight": {
+    "airlines": "Delta Air Lines",
+    "departure": {
+     "airport": "LAX",
+     "dateTime": "2027-04-09T23:15:00-07:00"
+    },
+    "arrival": {
+     "airport": "HKG",
+     "dateTime": "2027-04-11T05:05:00+08:00"
+    },
+    "duration": "14h 50m",
+    "layovers": 0,
+    "attributes": [
+     "standard",
+     "nonstop"
+    ]
+   }
+  },
+  {
+   "type": "FlightCard",
+   "id": "HKG-LAX-2027-03-12-2027-04-09-trip=CX882,DL87",
+   "airlines": "Cathay Pacific",
+   "departure": {
+    "airport": "HKG",
+    "dateTime": "2027-03-12T19:50:00+08:00"
+   },
+   "arrival": {
+    "airport": "LAX",
+    "dateTime": "2027-03-12T16:30:00-08:00"
+   },
+   "duration": "12h 40m",
+   "layovers": 0,
+   "price": {
+    "amount": 6691,
+    "currency": "USD",
+    "usdAmount": 6691
+   },
+   "deepLink": "https://skiplagged.com/flights/HKG/LAX/2027-03-12/2027-04-09?fare_class=business&utm_source=mcp&utm_medium=ai&utm_campaign=skiplagged_mcp#trip=CX882,DL87",
+   "attributes": [
+    "standard",
+    "nonstop"
+   ],
+   "returnFlight": {
+    "airlines": "Delta Air Lines",
+    "departure": {
+     "airport": "LAX",
+     "dateTime": "2027-04-09T23:15:00-07:00"
+    },
+    "arrival": {
+     "airport": "HKG",
+     "dateTime": "2027-04-11T05:05:00+08:00"
+    },
+    "duration": "14h 50m",
+    "layovers": 0,
+    "attributes": [
+     "standard",
+     "nonstop"
+    ]
+   }
+  },
+  {
+   "type": "FlightCard",
+   "id": "HKG-LAX-2027-03-12-2027-04-09-trip=SQ821,DL87",
+   "airlines": "Singapore Airlines",
+   "departure": {
+    "airport": "HKG",
+    "dateTime": "2027-03-12T22:45:00+08:00"
+   },
+   "arrival": {
+    "airport": "LAX",
+    "dateTime": "2027-03-12T19:30:00-08:00"
+   },
+   "duration": "12h 45m",
+   "layovers": 0,
+   "price": {
+    "amount": 7284,
+    "currency": "USD",
+    "usdAmount": 7284
+   },
+   "deepLink": "https://skiplagged.com/flights/HKG/LAX/2027-03-12/2027-04-09?fare_class=business&utm_source=mcp&utm_medium=ai&utm_campaign=skiplagged_mcp#trip=SQ821,DL87",
+   "attributes": [
+    "standard",
+    "nonstop"
+   ],
+   "returnFlight": {
+    "airlines": "Delta Air Lines",
+    "departure": {
+     "airport": "LAX",
+     "dateTime": "2027-04-09T23:15:00-07:00"
+    },
+    "arrival": {
+     "airport": "HKG",
+     "dateTime": "2027-04-11T05:05:00+08:00"
+    },
+    "duration": "14h 50m",
+    "layovers": 0,
+    "attributes": [
+     "standard",
+     "nonstop"
+    ]
+   }
+  },
+  {
+   "type": "FlightCard",
+   "id": "HKG-LAX-2027-03-12-2027-04-09-trip=DL88,DL87",
+   "airlines": "Delta Air Lines",
+   "departure": {
+    "airport": "HKG",
+    "dateTime": "2027-03-12T10:45:00+08:00"
+   },
+   "arrival": {
+    "airport": "LAX",
+    "dateTime": "2027-03-12T07:54:00-08:00"
+   },
+   "duration": "13h 9m",
+   "layovers": 0,
+   "price": {
+    "amount": 8873,
+    "currency": "USD",
+    "usdAmount": 8873
+   },
+   "deepLink": "https://skiplagged.com/flights/HKG/LAX/2027-03-12/2027-04-09?fare_class=business&utm_source=mcp&utm_medium=ai&utm_campaign=skiplagged_mcp#trip=DL88,DL87",
+   "attributes": [
+    "standard",
+    "nonstop"
+   ],
+   "returnFlight": {
+    "airlines": "Delta Air Lines",
+    "departure": {
+     "airport": "LAX",
+     "dateTime": "2027-04-09T23:15:00-07:00"
+    },
+    "arrival": {
+     "airport": "HKG",
+     "dateTime": "2027-04-11T05:05:00+08:00"
+    },
+    "duration": "14h 50m",
+    "layovers": 0,
+    "attributes": [
+     "standard",
+     "nonstop"
+    ]
+   }
+  }
+ ],
+ "pagination": {
+  "totalAvailable": 8,
+  "currentlyShowing": 8,
+  "offset": 0,
+  "limit": 100,
+  "hasMoreResults": false
+ },
+ "pricing": {
+  "currency": "USD",
+  "requestedCurrency": "USD",
+  "rate": 1,
+  "approximate": false
+ }
+}

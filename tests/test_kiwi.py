@@ -1,6 +1,5 @@
 import json
 from pathlib import Path
-from types import SimpleNamespace
 
 import pytest
 
@@ -37,10 +36,6 @@ def raw_itinerary(price=3500.0, **overrides):
 
 def response(*itineraries, currency="USD", error=None):
     return {"currency": currency, "itineraries": list(itineraries), "error": error}
-
-
-def tool_result(text="", *, structured=None, is_error=False):
-    return SimpleNamespace(content=[SimpleNamespace(text=text)], structured_content=structured, is_error=is_error)
 
 
 # --- building the search ---------------------------------------------------------------
@@ -150,27 +145,6 @@ def test_a_response_where_nothing_can_be_read_is_raised():
 
     with pytest.raises(SourceError, match="format may have changed"):
         kiwi.parse_payload(response(without_segments, "not even a mapping"))
-
-
-def test_tool_result_prefers_structured_content():
-    assert kiwi._payload(tool_result("ignored", structured={"currency": "USD"})) == {"currency": "USD"}
-
-
-def test_tool_result_falls_back_to_json_text():
-    assert kiwi._payload(tool_result('{"currency": "USD"}')) == {"currency": "USD"}
-
-
-@pytest.mark.parametrize(
-    ("result", "message"),
-    [
-        (tool_result("departureDate must be in the future", is_error=True), "rejected the search: departureDate"),
-        (tool_result("<html>busy</html>"), "not JSON"),
-        (tool_result("[1, 2]"), "not a JSON object"),
-    ],
-)
-def test_tool_results_that_are_not_an_answer_are_raised(result, message):
-    with pytest.raises(SourceError, match=message):
-        kiwi._payload(result)
 
 
 # --- retries ---------------------------------------------------------------------------

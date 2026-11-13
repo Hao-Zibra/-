@@ -14,7 +14,8 @@ from typing import Any, Protocol, TextIO
 import httpx
 
 from farewatch import alerts, github, kiwi, rules, store
-from farewatch.config import ConfigError, Watch, load_watchlist
+from farewatch import hunt as hunting
+from farewatch.config import CABINS, ConfigError, Watch, load_watchlist, parse_watch
 from farewatch.model import Itinerary, Leg, SourceError
 
 log = logging.getLogger("farewatch")
@@ -49,12 +50,41 @@ def main(argv: Sequence[str] | None = None) -> int:
         action="store_true",
         help="deliver alerts as issues on $GITHUB_REPOSITORY instead of printing them",
     )
+    hunt_parser = commands.add_parser(
+        "hunt", help="search every source once, thoroughly, for the cheapest ways to fly a trip"
+    )
+    hunt_parser.add_argument(
+        "--from", dest="origins", required=True, metavar="AIRPORTS", help="departure airports, e.g. HKG,PVG"
+    )
+    hunt_parser.add_argument(
+        "--to", dest="destinations", required=True, metavar="AIRPORTS", help="arrival airports, e.g. LAX,SFO"
+    )
+    hunt_parser.add_argument(
+        "--depart", required=True, metavar="DAY[:DAY]", help="day or window to fly out, e.g. 2027-03-10:2027-03-16"
+    )
+    hunt_parser.add_argument(
+        "--return", dest="ret", required=True, metavar="DAY[:DAY]", help="day or window to fly back"
+    )
+    hunt_parser.add_argument("--cabin", default="business", choices=CABINS, help="default: %(default)s")
+    hunt_parser.add_argument(
+        "--connections", action="store_true", help="also accept connecting flights (default: nonstop only)"
+    )
+    hunt_parser.add_argument(
+        "--same-airport",
+        action="store_true",
+        help="fly back to the airport the trip started from (default: any of the departure airports)",
+    )
+    hunt_parser.add_argument("--adults", type=int, default=1, help="default: %(default)s")
+    hunt_parser.add_argument("--currency", default="USD", help="default: %(default)s")
+    hunt_parser.add_argument("--top", type=int, default=15, help="how many finds to list (default: %(default)s)")
     args = parser.parse_args(argv)
 
     logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s: %(message)s")
     for noisy in ("httpx", "httpx2", "mcp"):  # one INFO line per HTTP request otherwise
         logging.getLogger(noisy).setLevel(logging.WARNING)
 
+    if args.command == "hunt":
+        return _hunt(args)
     try:
         watches = load_watchlist(args.watchlist)
         issues = github.from_environment() if args.github_issues else None
@@ -63,6 +93,37 @@ def main(argv: Sequence[str] | None = None) -> int:
         return 2
     mention = os.environ.get("GITHUB_REPOSITORY_OWNER") if issues else None
     return scan(watches, Path(args.data_dir), issues=issues, mention=mention)
+
+
+def _hunt(args: argparse.Namespace) -> int:
+    try:
+        watch = parse_watch(
+            {
+                "name": "hunt",
+                "origins": args.origins.split(","),
+                "destinations": args.destinations.split(","),
+                "depart": _window(args.depart),
+                "return": _window(args.ret),
+                "cabin": args.cabin,
+                "nonstop": not args.connections,
+                "open_jaw": not args.same_airport,
+                "adults": args.adults,
+            },
+            need_price_line=False,
+        )
+        result = hunting.hunt(watch, args.currency.upper())
+    except ConfigError as exc:
+        print(f"farewatch: {exc}", file=sys.stderr)
+        return 2
+    print(hunting.render(result, watch, top=args.top))
+    # Nothing found is a failure only when a source could not be searched.
+    return 1 if result.failures and not result.finds else 0
+
+
+def _window(text: str) -> dict[str, str]:
+    """'2027-03-10:2027-03-16' or a single day, in the mapping form watchlist files use."""
+    start, _, end = text.partition(":")
+    return {"from": start, "to": end or start}
 
 
 def scan(

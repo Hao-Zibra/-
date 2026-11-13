@@ -61,7 +61,7 @@ def load_watchlist(path: str | Path) -> list[Watch]:
         raise ConfigError(f"{path} is not valid YAML: {exc}") from None
     if not isinstance(raw, dict) or not isinstance(raw.get("watches"), list) or not raw["watches"]:
         raise ConfigError(f"{path} needs a non-empty 'watches' list")
-    watches = [_watch(entry, index) for index, entry in enumerate(raw["watches"])]
+    watches = [parse_watch(entry, f"watch #{index + 1}") for index, entry in enumerate(raw["watches"])]
     names = [watch.name for watch in watches]
     duplicates = sorted({name for name in names if names.count(name) > 1})
     if duplicates:
@@ -69,12 +69,17 @@ def load_watchlist(path: str | Path) -> list[Watch]:
     return watches
 
 
-def _watch(entry: Any, index: int) -> Watch:
+def parse_watch(entry: Any, label: str = "watch", *, need_price_line: bool = True) -> Watch:
+    """Builds a Watch from the mapping form used in watchlist files, checking every value.
+
+    `label` names the entry in error messages until its own name is known. A one-off search
+    has no price line to alert on, so it passes need_price_line=False.
+    """
     if not isinstance(entry, dict):
-        raise ConfigError(f"watch #{index + 1} must be a mapping")
+        raise ConfigError(f"{label} must be a mapping")
     name = entry.get("name")
     if not isinstance(name, str) or not name.strip():
-        raise ConfigError(f"watch #{index + 1} needs a 'name'")
+        raise ConfigError(f"{label} needs a 'name'")
     where = f"watch '{name}'"
 
     cabin = entry.get("cabin", "business")
@@ -96,7 +101,7 @@ def _watch(entry: Any, index: int) -> Watch:
         destinations=_airports(entry.get("destinations"), f"{where}: destinations"),
         depart=depart,
         ret=ret,
-        alert_below=_price_lines(entry.get("alert_below"), where),
+        alert_below=_price_lines(entry.get("alert_below"), where, required=need_price_line),
         cabin=cabin,
         nonstop=_flag(entry, "nonstop", True, where),
         adults=adults,
@@ -132,10 +137,12 @@ def _date(value: Any, where: str) -> date:
     try:
         return date.fromisoformat(str(value))
     except ValueError:
-        raise ConfigError(f"{where}: {value!r} is not a date like 2027-01-05") from None
+        raise ConfigError(f"{where}: {value!r} is not a date like 2027-03-12") from None
 
 
-def _price_lines(value: Any, where: str) -> dict[str, float]:
+def _price_lines(value: Any, where: str, *, required: bool) -> dict[str, float]:
+    if value is None and not required:
+        return {}
     if not isinstance(value, dict) or not value:
         raise ConfigError(f"{where}: alert_below needs at least one price line, e.g. {{USD: 4000}}")
     lines = {}

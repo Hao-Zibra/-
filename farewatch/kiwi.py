@@ -9,7 +9,6 @@ bound and verify on the airline's site before buying.
 from __future__ import annotations
 
 import asyncio
-import json
 import logging
 import time
 from collections.abc import Sequence
@@ -20,6 +19,7 @@ from mcp import ClientSession
 from mcp.client.streamable_http import streamable_http_client
 
 from farewatch.config import Watch
+from farewatch.mcptool import describe, payload
 from farewatch.model import Itinerary, Leg, Segment, SourceError
 
 log = logging.getLogger(__name__)
@@ -50,11 +50,11 @@ def fetch(
     for attempt in range(1, attempts + 1):
         try:
             payloads = asyncio.run(asyncio.wait_for(_search(argument_sets, url=url, pause=pause), timeout))
-            return [itinerary for payload in payloads for itinerary in parse_payload(payload)]
+            return [itinerary for answer in payloads for itinerary in parse_payload(answer)]
         except Exception as exc:  # network, protocol and format errors all get the same retry
             if attempt == attempts:
-                raise SourceError(f"Kiwi search failed after {attempts} attempts: {_describe(exc)}") from exc
-            log.warning("Kiwi search attempt %d failed (%s), retrying", attempt, _describe(exc))
+                raise SourceError(f"Kiwi search failed after {attempts} attempts: {describe(exc)}") from exc
+            log.warning("Kiwi search attempt %d failed (%s), retrying", attempt, describe(exc))
             time.sleep(5 * attempt)
     raise AssertionError("unreachable")
 
@@ -131,23 +131,8 @@ async def _search(argument_sets: Sequence[dict[str, Any]], *, url: str, pause: f
             for index, arguments in enumerate(argument_sets):
                 if index:
                     await asyncio.sleep(pause)
-                payloads.append(_payload(await session.call_tool(TOOL, arguments)))
+                payloads.append(payload(await session.call_tool(TOOL, arguments), "Kiwi"))
     return payloads
-
-
-def _payload(result: Any) -> dict[str, Any]:
-    text = "".join(getattr(block, "text", "") or "" for block in result.content)
-    if result.is_error:
-        raise SourceError(f"Kiwi rejected the search: {text[:300]}")
-    if isinstance(result.structured_content, dict):
-        return result.structured_content
-    try:
-        data = json.loads(text)
-    except ValueError:
-        raise SourceError(f"Kiwi response is not JSON: {text[:200]!r}") from None
-    if not isinstance(data, dict):
-        raise SourceError(f"Kiwi response is not a JSON object: {text[:200]!r}")
-    return data
 
 
 def _leg(raw: dict[str, Any]) -> Leg:
@@ -182,10 +167,3 @@ def _chunks(codes: Sequence[str]) -> list[str]:
 
 def _date(day: date) -> str:
     return day.strftime("%d/%m/%Y")
-
-
-def _describe(exc: BaseException) -> str:
-    """The first concrete error inside (possibly nested) exception groups."""
-    while isinstance(exc, BaseExceptionGroup) and exc.exceptions:
-        exc = exc.exceptions[0]
-    return f"{type(exc).__name__}: {exc}"

@@ -90,15 +90,16 @@ def money(amount: float, currency: str) -> str:
 
 
 def _leg_row(label: str, leg: Leg) -> str:
-    return f"| {label} | {leg.flights} | {_route(leg)} | {_time(leg.departure)} | {_time(leg.arrival)} |"
+    return f"| {label} | {leg.flights} | {route(leg)} | {_time(leg.departure)} | {_time(leg.arrival)} |"
 
 
 def _leg_summary(leg: Leg) -> str:
-    return f"{leg.flights} {_route(leg)} {leg.departure[:10]}"
+    return f"{leg.flights} {route(leg)} {leg.departure[:10]}"
 
 
-def _route(leg: Leg) -> str:
-    return " → ".join([leg.origin, *(segment.destination for segment in leg.segments)])
+def route(leg: Leg) -> str:
+    """'HKG → MNL → LAX'; a connection the source did not name shows as '?'."""
+    return " → ".join(airport or "?" for airport in [leg.origin, *(segment.destination for segment in leg.segments)])
 
 
 def _time(timestamp: str) -> str:

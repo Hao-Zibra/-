@@ -1,0 +1,118 @@
+{
+ "searchUrl": "https://skiplagged.com/flights/HKG/LAX/2027-03-12?fare_class=business&utm_source=mcp&utm_medium=ai&utm_campaign=skiplagged_mcp",
+ "flights": [
+  {
+   "type": "FlightCard",
+   "id": "HKG-LAX-2027-03-12-trip=PR319-PR102",
+   "airlines": "Philippine Airlines",
+   "departure": {
+    "airport": "HKG",
+    "dateTime": "2027-03-12T13:30:00+08:00"
+   },
+   "arrival": {
+    "airport": "LAX",
+    "dateTime": "2027-03-12T19:10:00-08:00"
+   },
+   "duration": "21h 40m",
+   "layovers": 1,
+   "price": {
+    "amount": 2171,
+    "currency": "USD",
+    "usdAmount": 2171
+   },
+   "deepLink": "https://skiplagged.com/flights/HKG/LAX/2027-03-12?fare_class=business&utm_source=mcp&utm_medium=ai&utm_campaign=skiplagged_mcp#trip=PR319-PR102",
+   "attributes": [
+    "standard",
+    "one-stop"
+   ]
+  },
+  {
+   "type": "FlightCard",
+   "id": "HKG-LAX-2027-03-12-trip=PR311-PR112",
+   "airlines": "Philippine Airlines",
+   "departure": {
+    "airport": "HKG",
+    "dateTime": "2027-03-12T22:55:00+08:00"
+   },
+   "arrival": {
+    "airport": "LAX",
+    "dateTime": "2027-03-13T08:05:00-08:00"
+   },
+   "duration": "25h 10m",
+   "layovers": 1,
+   "price": {
+    "amount": 2171,
+    "currency": "USD",
+    "usdAmount": 2171
+   },
+   "deepLink": "https://skiplagged.com/flights/HKG/LAX/2027-03-12?fare_class=business&utm_source=mcp&utm_medium=ai&utm_campaign=skiplagged_mcp#trip=PR311-PR112",
+   "attributes": [
+    "standard",
+    "one-stop"
+   ]
+  },
+  {
+   "type": "FlightCard",
+   "id": "HKG-LAX-2027-03-12-trip=PR307-PR112",
+   "airlines": "Philippine Airlines",
+   "departure": {
+    "airport": "HKG",
+    "dateTime": "2027-03-12T19:05:00+08:00"
+   },
+   "arrival": {
+    "airport": "LAX",
+    "dateTime": "2027-03-13T08:05:00-08:00"
+   },
+   "duration": "29h 0m",
+   "layovers": 1,
+   "price": {
+    "amount": 2171,
+    "currency": "USD",
+    "usdAmount": 2171
+   },
+   "deepLink": "https://skiplagged.com/flights/HKG/LAX/2027-03-12?fare_class=business&utm_source=mcp&utm_medium=ai&utm_campaign=skiplagged_mcp#trip=PR307-PR112",
+   "attributes": [
+    "standard",
+    "one-stop"
+   ]
+  },
+  {
+   "type": "FlightCard",
+   "id": "HKG-LAX-2027-03-12-trip=PR319-PR112",
+   "airlines": "Philippine Airlines",
+   "departure": {
+    "airport": "HKG",
+    "dateTime": "2027-03-12T13:30:00+08:00"
+   },
+   "arrival": {
+    "airport": "LAX",
+    "dateTime": "2027-03-13T08:05:00-08:00"
+   },
+   "duration": "34h 35m",
+   "layovers": 1,
+   "price": {
+    "amount": 2251,
+    "currency": "USD",
+    "usdAmount": 2251
+   },
+   "deepLink": "https://skiplagged.com/flights/HKG/LAX/2027-03-12?fare_class=business&utm_source=mcp&utm_medium=ai&utm_campaign=skiplagged_mcp#trip=PR319-PR112",
+   "attributes": [
+    "standard",
+    "one-stop"
+   ]
+  }
+ ],
+ "pagination": {
+  "totalAvailable": 300,
+  "currentlyShowing": 4,
+  "offset": 0,
+  "limit": 4,
+  "hasMoreResults": true
+ },
+ "pricing": {
+  "currency": "USD",
+  "requestedCurrency": "USD",
+  "rate": 1,
+  "approximate": false
+ }
+}

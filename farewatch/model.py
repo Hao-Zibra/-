@@ -18,7 +18,7 @@ class Segment:
     flight_number: str  # with the carrier prefix, e.g. "MU583"
     origin: str
     destination: str
-    departure: str  # local ISO timestamp, e.g. "2027-01-05T13:10:00"
+    departure: str  # local ISO timestamp, e.g. "2027-03-12T13:10:00"
     arrival: str
     cabin: str  # lower case with underscores, e.g. "business", "premium_economy"
 
@@ -72,6 +72,11 @@ class Itinerary:
     outbound: Leg
     inbound: Leg
     booking_url: str
+    # Two one-way tickets bought separately, not one round-trip ticket.
+    separate_tickets: bool = False
+    # The source priced the round trip without saying which return flight the price is for;
+    # `inbound` is then the same airline's cheapest flight that day.
+    inbound_assumed: bool = False
 
     @property
     def legs(self) -> tuple[Leg, Leg]:

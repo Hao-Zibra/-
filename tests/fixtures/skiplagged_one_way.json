@@ -1,0 +1,293 @@
+{
+ "searchUrl": "https://skiplagged.com/flights/HKG,PVG,PEK/LAX/2027-03-12?fare_class=business&utm_source=mcp&utm_medium=ai&utm_campaign=skiplagged_mcp",
+ "flights": [
+  {
+   "type": "FlightCard",
+   "id": "HKG,PVG,PEK-LAX-2027-03-12-trip=UA821",
+   "airlines": "United Airlines",
+   "departure": {
+    "airport": "HKG",
+    "dateTime": "2027-03-12T22:45:00+08:00"
+   },
+   "arrival": {
+    "airport": "LAX",
+    "dateTime": "2027-03-12T19:30:00-08:00"
+   },
+   "duration": "12h 45m",
+   "layovers": 0,
+   "price": {
+    "amount": 3532,
+    "currency": "USD",
+    "usdAmount": 3532
+   },
+   "deepLink": "https://skiplagged.com/flights/HKG,PVG,PEK/LAX/2027-03-12?fare_class=business&utm_source=mcp&utm_medium=ai&utm_campaign=skiplagged_mcp#trip=UA821",
+   "attributes": [
+    "standard",
+    "nonstop"
+   ]
+  },
+  {
+   "type": "FlightCard",
+   "id": "HKG,PVG,PEK-LAX-2027-03-12-trip=UA153",
+   "airlines": "United Airlines",
+   "departure": {
+    "airport": "HKG",
+    "dateTime": "2027-03-12T11:25:00+08:00"
+   },
+   "arrival": {
+    "airport": "LAX",
+    "dateTime": "2027-03-12T08:05:00-08:00"
+   },
+   "duration": "12h 40m",
+   "layovers": 0,
+   "price": {
+    "amount": 3716,
+    "currency": "USD",
+    "usdAmount": 3716
+   },
+   "deepLink": "https://skiplagged.com/flights/HKG,PVG,PEK/LAX/2027-03-12?fare_class=business&utm_source=mcp&utm_medium=ai&utm_campaign=skiplagged_mcp#trip=UA153",
+   "attributes": [
+    "standard",
+    "nonstop"
+   ]
+  },
+  {
+   "type": "FlightCard",
+   "id": "HKG,PVG,PEK-LAX-2027-03-12-trip=CX880",
+   "airlines": "Cathay Pacific",
+   "departure": {
+    "airport": "HKG",
+    "dateTime": "2027-03-12T00:30:00+08:00"
+   },
+   "arrival": {
+    "airport": "LAX",
+    "dateTime": "2027-03-11T21:05:00-08:00"
+   },
+   "duration": "12h 35m",
+   "layovers": 0,
+   "price": {
+    "amount": 3807,
+    "currency": "USD",
+    "usdAmount": 3807
+   },
+   "deepLink": "https://skiplagged.com/flights/HKG,PVG,PEK/LAX/2027-03-12?fare_class=business&utm_source=mcp&utm_medium=ai&utm_campaign=skiplagged_mcp#trip=CX880",
+   "attributes": [
+    "standard",
+    "nonstop"
+   ]
+  },
+  {
+   "type": "FlightCard",
+   "id": "HKG,PVG,PEK-LAX-2027-03-12-trip=UA199",
+   "airlines": "United Airlines",
+   "departure": {
+    "airport": "PVG",
+    "dateTime": "2027-03-12T20:55:00+08:00"
+   },
+   "arrival": {
+    "airport": "LAX",
+    "dateTime": "2027-03-12T16:35:00-08:00"
+   },
+   "duration": "11h 40m",
+   "layovers": 0,
+   "price": {
+    "amount": 4004,
+    "currency": "USD",
+    "usdAmount": 4004
+   },
+   "deepLink": "https://skiplagged.com/flights/HKG,PVG,PEK/LAX/2027-03-12?fare_class=business&utm_source=mcp&utm_medium=ai&utm_campaign=skiplagged_mcp#trip=UA199",
+   "attributes": [
+    "standard",
+    "nonstop"
+   ]
+  },
+  {
+   "type": "FlightCard",
+   "id": "HKG,PVG,PEK-LAX-2027-03-12-trip=DL38",
+   "airlines": "Delta Air Lines",
+   "departure": {
+    "airport": "PVG",
+    "dateTime": "2027-03-12T19:20:00+08:00"
+   },
+   "arrival": {
+    "airport": "LAX",
+    "dateTime": "2027-03-12T15:05:00-08:00"
+   },
+   "duration": "11h 45m",
+   "layovers": 0,
+   "price": {
+    "amount": 4731,
+    "currency": "USD",
+    "usdAmount": 4731
+   },
+   "deepLink": "https://skiplagged.com/flights/HKG,PVG,PEK/LAX/2027-03-12?fare_class=business&utm_source=mcp&utm_medium=ai&utm_campaign=skiplagged_mcp#trip=DL38",
+   "attributes": [
+    "standard",
+    "nonstop"
+   ]
+  },
+  {
+   "type": "FlightCard",
+   "id": "HKG,PVG,PEK-LAX-2027-03-12-trip=AI153",
+   "airlines": "Air India",
+   "departure": {
+    "airport": "HKG",
+    "dateTime": "2027-03-12T11:25:00+08:00"
+   },
+   "arrival": {
+    "airport": "LAX",
+    "dateTime": "2027-03-12T08:05:00-08:00"
+   },
+   "duration": "12h 40m",
+   "layovers": 0,
+   "price": {
+    "amount": 5293,
+    "currency": "USD",
+    "usdAmount": 5293
+   },
+   "deepLink": "https://skiplagged.com/flights/HKG,PVG,PEK/LAX/2027-03-12?fare_class=business&utm_source=mcp&utm_medium=ai&utm_campaign=skiplagged_mcp#trip=AI153",
+   "attributes": [
+    "standard",
+    "nonstop"
+   ]
+  },
+  {
+   "type": "FlightCard",
+   "id": "HKG,PVG,PEK-LAX-2027-03-12-trip=AI821",
+   "airlines": "Air India",
+   "departure": {
+    "airport": "HKG",
+    "dateTime": "2027-03-12T22:45:00+08:00"
+   },
+   "arrival": {
+    "airport": "LAX",
+    "dateTime": "2027-03-12T19:30:00-08:00"
+   },
+   "duration": "12h 45m",
+   "layovers": 0,
+   "price": {
+    "amount": 5293,
+    "currency": "USD",
+    "usdAmount": 5293
+   },
+   "deepLink": "https://skiplagged.com/flights/HKG,PVG,PEK/LAX/2027-03-12?fare_class=business&utm_source=mcp&utm_medium=ai&utm_campaign=skiplagged_mcp#trip=AI821",
+   "attributes": [
+    "standard",
+    "nonstop"
+   ]
+  },
+  {
+   "type": "FlightCard",
+   "id": "HKG,PVG,PEK-LAX-2027-03-12-trip=CX884",
+   "airlines": "Cathay Pacific",
+   "departure": {
+    "airport": "HKG",
+    "dateTime": "2027-03-12T12:40:00+08:00"
+   },
+   "arrival": {
+    "airport": "LAX",
+    "dateTime": "2027-03-12T09:20:00-08:00"
+   },
+   "duration": "12h 40m",
+   "layovers": 0,
+   "price": {
+    "amount": 5370,
+    "currency": "USD",
+    "usdAmount": 5370
+   },
+   "deepLink": "https://skiplagged.com/flights/HKG,PVG,PEK/LAX/2027-03-12?fare_class=business&utm_source=mcp&utm_medium=ai&utm_campaign=skiplagged_mcp#trip=CX884",
+   "attributes": [
+    "standard",
+    "nonstop"
+   ]
+  },
+  {
+   "type": "FlightCard",
+   "id": "HKG,PVG,PEK-LAX-2027-03-12-trip=CX882",
+   "airlines": "Cathay Pacific",
+   "departure": {
+    "airport": "HKG",
+    "dateTime": "2027-03-12T19:50:00+08:00"
+   },
+   "arrival": {
+    "airport": "LAX",
+    "dateTime": "2027-03-12T16:30:00-08:00"
+   },
+   "duration": "12h 40m",
+   "layovers": 0,
+   "price": {
+    "amount": 5370,
+    "currency": "USD",
+    "usdAmount": 5370
+   },
+   "deepLink": "https://skiplagged.com/flights/HKG,PVG,PEK/LAX/2027-03-12?fare_class=business&utm_source=mcp&utm_medium=ai&utm_campaign=skiplagged_mcp#trip=CX882",
+   "attributes": [
+    "standard",
+    "nonstop"
+   ]
+  },
+  {
+   "type": "FlightCard",
+   "id": "HKG,PVG,PEK-LAX-2027-03-12-trip=MH9204",
+   "airlines": "Malaysia Airlines",
+   "departure": {
+    "airport": "HKG",
+    "dateTime": "2027-03-12T12:40:00+08:00"
+   },
+   "arrival": {
+    "airport": "LAX",
+    "dateTime": "2027-03-12T09:20:00-08:00"
+   },
+   "duration": "12h 40m",
+   "layovers": 0,
+   "price": {
+    "amount": 5409,
+    "currency": "USD",
+    "usdAmount": 5409
+   },
+   "deepLink": "https://skiplagged.com/flights/HKG,PVG,PEK/LAX/2027-03-12?fare_class=business&utm_source=mcp&utm_medium=ai&utm_campaign=skiplagged_mcp#trip=MH9204",
+   "attributes": [
+    "standard",
+    "nonstop"
+   ]
+  },
+  {
+   "type": "FlightCard",
+   "id": "HKG,PVG,PEK-LAX-2027-03-12-trip=DL88",
+   "airlines": "Delta Air Lines",
+   "departure": {
+    "airport": "HKG",
+    "dateTime": "2027-03-12T10:45:00+08:00"
+   },
+   "arrival": {
+    "airport": "LAX",
+    "dateTime": "2027-03-12T07:54:00-08:00"
+   },
+   "duration": "13h 9m",
+   "layovers": 0,
+   "price": {
+    "amount": 6101,
+    "currency": "USD",
+    "usdAmount": 6101
+   },
+   "deepLink": "https://skiplagged.com/flights/HKG,PVG,PEK/LAX/2027-03-12?fare_class=business&utm_source=mcp&utm_medium=ai&utm_campaign=skiplagged_mcp#trip=DL88",
+   "attributes": [
+    "standard",
+    "nonstop"
+   ]
+  }
+ ],
+ "pagination": {
+  "totalAvailable": 11,
+  "currentlyShowing": 11,
+  "offset": 0,
+  "limit": 100,
+  "hasMoreResults": false
+ },
+ "pricing": {
+  "currency": "USD",
+  "requestedCurrency": "USD",
+  "rate": 1,
+  "approximate": false
+ }
+}
