@@ -170,7 +170,7 @@ def render(result: Hunt, watch: Watch, *, top: int = 10) -> str:
         ]
         lines += [
             f"| {origin} {_row(find)}" if find else f"| {origin} | 没有查到 | | | | |"
-            for origin, find in zip(watch.origins, per_origin)
+            for origin, find in zip(watch.origins, per_origin, strict=True)
         ]
         if best.cheap_days:
             days_out, days_back = (
@@ -273,7 +273,7 @@ class _Prober:
             self._quotes[dates] = {}
         answers = self._search(queries)
         self.searches += len(answers)
-        for dates, query, answer in zip(todo, queries, answers):
+        for dates, query, answer in zip(todo, queries, answers, strict=True):
             for offer in _parse(query, answer, self._watch, self._failures):
                 if not _fits(offer.leg, self._watch, outbound=True):
                     continue
@@ -292,7 +292,7 @@ def _offers(
 ) -> list[Offer]:
     """The one-way offers that fit the watch, one (the cheapest) per flight and day."""
     best: dict[tuple[str, str], Offer] = {}
-    for query, answer in zip(queries, answers):
+    for query, answer in zip(queries, answers, strict=True):
         for offer in _parse(query, answer, watch, failures):
             flight = (offer.leg.flights, offer.leg.departure)
             if _fits(offer.leg, watch, outbound=outbound) and (

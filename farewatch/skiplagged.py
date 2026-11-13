@@ -75,7 +75,7 @@ def search_many(
         log.warning("Skiplagged refused %d of %d searches (rate limit); retrying them in %.0fs",
                     len(refused), len(queries), cool_off)
         time.sleep(cool_off)
-        for index, answer in zip(refused, run([queries[index] for index in refused], 2)):
+        for index, answer in zip(refused, run([queries[index] for index in refused], 2), strict=True):
             answers[index] = answer
     return answers
 
