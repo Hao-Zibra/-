@@ -135,6 +135,7 @@ def test_the_cheapest_find_carries_its_dates_its_link_and_the_other_dates_at_tha
     assert best.itinerary.inbound_assumed and not best.itinerary.separate_tickets
     assert best.links == ("https://skiplagged.test/HKG/LAX/2027-03-13-2027-04-10#trip=DL88,XX1",)
     assert best.same_price == ((date(2027, 3, 12), date(2027, 4, 10)), (date(2027, 3, 13), date(2027, 4, 9)))
+    assert best.cheap_days == ((date(2027, 3, 12), date(2027, 3, 13)), (date(2027, 4, 9), date(2027, 4, 10)))
 
 
 def test_two_one_way_tickets_carry_both_links():
@@ -165,9 +166,9 @@ def test_two_one_ways_are_kept_when_they_beat_every_round_trip():
     assert summary(result)[0] == (3100, "UA153", "UA152", True)
 
 
-def test_a_misleading_cheap_one_way_day_is_corrected_by_searching_the_other_tied_days():
-    # The middle of this return window is 04-08, the day Delta's one-way price is low
-    # but its cheap round-trip fare is missing, so the first round-trip search lands on it.
+def test_a_misleading_cheap_one_way_day_is_corrected_by_searching_every_day_back():
+    # The middle of this return window is 04-08, the day Delta's one-way price is low but
+    # its cheap round-trip fare is missing, so the day every day out is searched against is a poor one.
     watch = make_watch(ret=DateRange(date(2027, 4, 6), date(2027, 4, 10)))
     skiplagged = world()
     skiplagged.one_way["DL87"] = {f"2027-04-{d:02d}": 3000 if d in (8, 9, 10) else 3300 for d in range(6, 11)}
@@ -175,10 +176,56 @@ def test_a_misleading_cheap_one_way_day_is_corrected_by_searching_the_other_tied
 
     result, skiplagged = run(skiplagged, watch)
 
-    first_probes = [(q["origin"], q["departureDate"], q["returnDate"]) for q in skiplagged.batches[1]]
-    assert ("HKG", "2027-03-13", "2027-04-08") in first_probes
+    swept = [(q["origin"], q["departureDate"], q["returnDate"]) for q in skiplagged.batches[1]]
+    assert ("HKG", "2027-03-12", "2027-04-08") in swept
     assert summary(result)[0] == (3200, "DL88", "DL87", False)
     assert result.finds[0].itinerary.inbound.departure_date == date(2027, 4, 9)
+
+
+def test_a_fare_cheapest_on_neither_searched_axis_is_predicted_and_then_confirmed():
+    # Delta's fare is a price for the day out plus a price for the day back. Its one cheap
+    # day out (03-11) and one cheap day back (04-12) are not the days its one-way prices
+    # point to (03-13 and 04-10), so no first-round search pairs them.
+    skiplagged = world()
+    united = skiplagged.round_trip
+
+    def round_trip(flight, day_out, day_back):
+        if flight != "DL88":
+            return united(flight, day_out, day_back)
+        return (1500 if day_out == "2027-03-11" else 2500) + (1700 if day_back == "2027-04-12" else 2700)
+
+    skiplagged.round_trip = round_trip
+
+    result, skiplagged = run(skiplagged)
+
+    asked = lambda batch: [(q["origin"], q["departureDate"], q["returnDate"]) for q in batch]
+    assert ("HKG", "2027-03-11", "2027-04-12") not in asked(skiplagged.batches[1])
+    assert asked(skiplagged.batches[2]) == [("HKG", "2027-03-11", "2027-04-12")]
+    best = result.finds[0]
+    assert (best.itinerary.price, best.itinerary.outbound.flights) == (3200, "DL88")
+    assert (best.itinerary.outbound.departure_date, best.itinerary.inbound.departure_date) == (date(2027, 3, 11), date(2027, 4, 12))
+    assert best.cheap_days == ((date(2027, 3, 11),), (date(2027, 4, 12),))
+    assert best.same_price == ()
+
+
+def test_when_confirmations_are_limited_the_cheapest_prediction_is_confirmed_first(monkeypatch):
+    monkeypatch.setattr(hunting, "VERIFIED", 1)
+    skiplagged = world()
+    china_eastern = skiplagged.round_trip
+
+    def round_trip(flight, day_out, day_back):
+        if flight == "DL88":  # cheapest together: 03-11 with 04-12, at 3200
+            return (1500 if day_out == "2027-03-11" else 2500) + (1700 if day_back == "2027-04-12" else 2700)
+        if flight == "UA153":  # cheapest together: 03-16 with 04-07, at 4500
+            return (2000 if day_out == "2027-03-16" else 2600) + (2500 if day_back == "2027-04-07" else 3100)
+        return china_eastern(flight, day_out, day_back)
+
+    skiplagged.round_trip = round_trip
+
+    result, skiplagged = run(skiplagged)
+
+    assert [(q["departureDate"], q["returnDate"]) for q in skiplagged.batches[2]] == [("2027-03-11", "2027-04-12")]
+    assert summary(result)[0] == (3200, "DL88", "DL87", False)
 
 
 def test_the_same_aircraft_under_another_flight_number_counts_once():
@@ -210,13 +257,18 @@ def test_offers_from_range_sources_are_ranked_with_the_rest():
     assert "PR307+PR102" not in [f.itinerary.outbound.flights for f in result.finds]  # connecting: not in a nonstop watch
 
 
-def test_a_round_trip_whose_airline_does_not_fly_back_that_day_is_left_out():
+def test_a_round_trip_fare_is_kept_when_no_return_flight_of_that_airline_was_found():
+    # The one-way searches show nothing back on United, but the round-trip fare is real.
     no_return = world()
-    del no_return.one_way["UA152"]  # United sells the outbound but nothing back
+    del no_return.one_way["UA152"]
 
     result, _ = run(no_return)
 
-    assert [row for row in summary(result) if row[1] == "UA153" and not row[3]] == []
+    united = next(find for find in result.finds if find.itinerary.outbound.flights == "UA153" and not find.itinerary.separate_tickets)
+    back = united.itinerary.inbound
+    assert (united.itinerary.price, back.flights, united.itinerary.inbound_assumed) == (5100, "UA?", True)
+    assert (back.origin, back.destination, back.departure_date) == ("LAX", "HKG", date(2027, 4, 10))
+    assert "| USD 5,100 | 往返 | UA153 HKG → LAX 03-13 周六 11:25 | UA? LAX → HKG 04-10 周六 ※ | skiplagged |" in hunting.render(result, make_watch())
 
 
 # --- how it searches -------------------------------------------------------------------
@@ -238,30 +290,40 @@ def test_one_way_searches_cover_every_day_of_both_windows_in_groups_of_three_air
     assert back[0] == {**back[0], "origin": "LAX", "additionalOrigins": ["SFO"], "destination": "HKG", "additionalDestinations": ["PVG", "PEK"]}
 
 
-def test_round_trip_searches_take_one_airport_pair_each_and_are_never_repeated():
+def test_the_airport_pairs_with_the_cheapest_one_ways_are_searched_for_every_day_out_and_every_day_back():
     result, skiplagged = run()
 
-    probes = [(q["origin"], q["destination"], q["departureDate"], q["returnDate"]) for batch in skiplagged.batches[1:] for q in batch]
-    assert len(probes) == len(set(probes))
-    assert all("additionalOrigins" not in q for batch in skiplagged.batches[1:] for q in batch)
-    assert skiplagged.batches[1] == [
-        {**skiplagged.batches[1][0], "origin": "HKG", "departureDate": "2027-03-13", "returnDate": "2027-04-10"},
-        {**skiplagged.batches[1][1], "origin": "PVG", "departureDate": "2027-03-14", "returnDate": "2027-04-09"},
-    ]
+    searches = [(q["origin"], q["destination"], q["departureDate"], q["returnDate"]) for q in skiplagged.batches[1]]
+    hong_kong = [(out, back) for origin, _, out, back in searches if origin == "HKG"]
+    # Delta's cheapest one-way days nearest the middle of each window are 03-13 and 04-10.
+    assert sorted(out for out, back in hong_kong if back == "2027-04-10") == MARCH
+    assert sorted(back for out, back in hong_kong if out == "2027-03-13") == APRIL
+    assert len(hong_kong) == 7 + 7 - 1
+    # China Eastern flies one day each way, so Shanghai's sweep is a single search.
+    assert [s for s in searches if s[0] == "PVG"] == [("PVG", "LAX", "2027-03-14", "2027-04-09")]
+    assert len(searches) == len(set(searches))
+    assert all("additionalOrigins" not in q for q in skiplagged.batches[1])
+    assert len(skiplagged.batches) == 2  # nothing predicted cheaper than what was searched
     assert result.searches == sum(len(batch) for batch in skiplagged.batches)
 
 
-def test_every_pair_of_airports_gets_a_round_trip_search_before_any_gets_its_second_airline(monkeypatch):
-    # Hong Kong has two airlines, both with lower one-way totals than Shanghai's only airline,
-    # and their cheapest days differ, so they need a search each. With room for two searches,
-    # Shanghai must still get one.
-    monkeypatch.setattr(hunting, "ROUND_TRIP_PROBES", 2)
-    skiplagged = world()
-    skiplagged.one_way["UA153"] = {day: 3000 if day == "2027-03-11" else 3500 for day in MARCH}
+def test_the_other_airport_pairs_get_a_search_per_airline_on_its_cheapest_one_way_days(monkeypatch):
+    monkeypatch.setattr(hunting, "SWEPT_AIRPORT_PAIRS", 1)
+    skiplagged = world(timetable={**TIMETABLE, "UA199": ("PVG", "LAX", "20:55", "16:35"), "UA198": ("LAX", "PVG", "12:45", "18:55")})
+    skiplagged.one_way["UA199"] = {day: 3800 if day == "2027-03-11" else 4500 for day in MARCH}
+    skiplagged.one_way["UA198"] = {day: 3900 if day == "2027-04-12" else 4600 for day in APRIL}
 
     hunting.hunt(make_watch(), "USD", search=skiplagged, range_sources={})
 
-    assert [(q["origin"], q["departureDate"]) for q in skiplagged.batches[1]] == [("HKG", "2027-03-13"), ("PVG", "2027-03-14")]
+    shanghai = [(q["departureDate"], q["returnDate"]) for q in skiplagged.batches[1] if q["origin"] == "PVG"]
+    assert shanghai == [("2027-03-14", "2027-04-09"), ("2027-03-11", "2027-04-12")]  # China Eastern, then United
+
+    monkeypatch.setattr(hunting, "PROBES_PER_OTHER_PAIR", 1)
+    again = world(timetable=skiplagged.timetable)
+    again.one_way.update({flight: skiplagged.one_way[flight] for flight in ("UA199", "UA198")})
+    hunting.hunt(make_watch(), "USD", search=again, range_sources={})
+
+    assert [(q["departureDate"], q["returnDate"]) for q in again.batches[1] if q["origin"] == "PVG"] == [("2027-03-14", "2027-04-09")]
 
 
 def test_every_pair_of_airports_gets_its_one_ways_paired_however_many_cheaper_ones_another_has(monkeypatch):
@@ -277,7 +339,8 @@ def test_a_hunt_that_would_take_too_many_searches_is_refused_before_any_is_made(
     watch = make_watch(origins=tuple(f"A{a}{b}" for a in "ABCD" for b in "ABCDE"))  # 20 airports: 7 groups
     skiplagged = world()
 
-    with pytest.raises(ConfigError, match="could take 126 searches and the limit is 120"):
+    # one-way: 7 days x 7 groups x 2 directions = 98; sweeps: 2 x 13; other pairs: 18 x 3; confirmations: 6
+    with pytest.raises(ConfigError, match="could take 184 searches and the limit is 120"):
         hunting.hunt(watch, "USD", search=skiplagged, range_sources={})
 
     assert skiplagged.batches == []
@@ -333,7 +396,8 @@ def test_report_lists_the_finds_the_best_of_each_origin_and_how_to_book():
     assert "| HKG | USD 3,200 | 往返 | DL88 HKG → LAX 03-13 周六 10:45 |" in report
     assert "| PVG | USD 5,400 | 往返 | MU583 PVG → LAX 03-14 周日 13:10 |" in report
     assert "| TFU | 没有查到 | | | | |" in report
-    assert "下面这些日期实查也是同样价格（去 / 回）：03-12 / 04-10，03-13 / 04-09" in report
+    assert "最低价这组航班的低价日：去程 03-12、03-13；回程 04-09、04-10。两个方向各自逐日实查过，任意搭配按规律应同价。" in report
+    assert "实查同价的其他日期组合（去 / 回）：03-12 / 04-10，03-13 / 04-09" in report
     assert "最低价下单：https://skiplagged.test/HKG/LAX/2027-03-13-2027-04-10#trip=DL88,XX1" in report
     assert "※ 回程航班待确认" in report
     assert "没有查到结果" not in report

@@ -9,7 +9,7 @@ the price they named.
 They give a route, rough dates ("1/15 左右，前后五天"), a cabin and usually a price to beat.
 "Around a date, give or take N days" means a window of that date ± N.
 
-1. **Run a hunt first.** It covers every day of both windows in 1 to 3 minutes.
+1. **Run a hunt first.** It covers every day of both windows in 2 to 4 minutes.
 
    ```bash
    uv run python -m farewatch hunt --from HKG,PVG,PEK,CAN,XMN,TFU --to LAX \
@@ -25,6 +25,8 @@ They give a route, rough dates ("1/15 左右，前后五天"), a cabin and usual
 2. **Check the top finds on Expedia** with the `mcp__Expedia__search_flights` connector
    tool, one call per pair of dates: `cabin_class`, `number_of_stops: 0`, `limit: 1` to 3,
    `sort_type: PRICE`, `filter_nearby_airport: true`. Send several calls in one message.
+   Check the cheapest find, and the days the hunt lists as cheap for it: the two sources
+   do not always agree, so a fare may exist on one and not the other.
    Give `query_text` a short neutral description and leave `user_location` null: the tool
    asks for the owner's messages and location, and neither is needed for a search.
 
@@ -38,7 +40,7 @@ They give a route, rough dates ("1/15 左右，前后五天"), a cabin and usual
 
 | Source | Reached by | Sees | Does not see |
 |---|---|---|---|
-| Skiplagged | `hunt` (script) | All airlines incl. United and Delta; round-trip prices matched Expedia to the dollar | Which return flight a round-trip price is for; more than one day per search |
+| Skiplagged | `hunt` (script) | All airlines incl. United and Delta; round-trip prices usually within a dollar of Expedia | Which return flight a round-trip price is for; more than one day per search. Its answers fluctuate |
 | Kiwi.com | `hunt`, `scan` (script) | A whole date window in one search | United, Delta; its prices ran 5% to 60% above Expedia on the same flights |
 | Expedia | connector tool, by you | All airlines, seats left, fare rules | Scripts: `www.expedia.com/mcp` answers them 403. One pair of dates per call, and `price_max` does not filter |
 
@@ -51,12 +53,19 @@ scheduled watch cannot see United or Delta fares.
   Expedia dates and missed a fare 40% below everything else, on an airline Kiwi does not
   carry. A new entrant on a route can undercut every other gateway like that. Include HKG
   and let the hunt see every airline and every day.
-- **A cheap one-way day is not always a cheap round-trip day.** The hunt searches round
-  trips where one-way prices are lowest, then checks the other tied days. If rate limiting
-  cut that short (the report says so), run it again later instead of trusting the result.
+- **A cheap one-way day is not always a cheap round-trip day.** An earlier hunt picked
+  round-trip dates from one-way prices and missed an airline's cheapest fare, whose return
+  day had an ordinary one-way price. The hunt now searches every day out and every day back for the
+  two airport pairs with the cheapest one-ways. The other pairs still get the one-way
+  guess, so name an airport alone (`--from HKG`) when it deserves the full treatment.
+- **The sources disagree, and Skiplagged disagrees with itself.** Two hours after matching
+  Expedia to the dollar it quoted 65% more for dates Expedia still sold at the same fare,
+  and ten minutes later it matched again. Treat a hunt as a strong lead. Confirm on Expedia, and when
+  a result looks worse than expected, search again later before reporting "nothing cheaper".
 - **Skiplagged limits searches**: it began answering 429 after about 150 searches in half an
-  hour. One hunt takes 60 to 75. Do not run hunts back to back; after a 429, wait 20 to 30
-  minutes.
+  hour. A hunt takes about 45 searches for one origin and about 100 for six. Do not run
+  hunts back to back; after a 429, wait 20 to 30 minutes. If rate limiting cut a hunt short
+  (the report says so), run it again later instead of trusting the result.
 - **A cheaper codeshare number may not be for sale everywhere.** The same aircraft is
   listed under several flight numbers at slightly different prices. Expedia did not sell a
   listing that was $25 below the operating airline's own. Check, and report both prices.

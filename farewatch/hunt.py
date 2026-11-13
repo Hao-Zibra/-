@@ -8,27 +8,29 @@ from __future__ import annotations
 
 from collections import defaultdict
 from collections.abc import Callable, Iterable, Mapping, Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import date, timedelta
 from typing import Any
 
 from farewatch import alerts, kiwi, rules, skiplagged
 from farewatch.config import ConfigError, DateRange, Watch
-from farewatch.model import Itinerary, Leg, SourceError
+from farewatch.model import Itinerary, Leg, Segment, SourceError
 from farewatch.skiplagged import Offer
 
 Search = Callable[[Sequence[dict[str, Any]]], list[dict[str, Any] | SourceError]]
 Fetch = Callable[[Watch, str], list[Itinerary]]
 Priced = tuple[Itinerary, tuple[str, ...]]  # an itinerary and the links to book it
-Route = tuple[str, str, str]  # origin, destination, airline
+Airports = tuple[str, str]  # where the trip starts and where it goes
 Dates = tuple[str, str, date, date]  # origin, destination, day out, day back
+# For each round-trip search made: outbound flight number -> cheapest round trip starting with it.
+Quotes = dict[Dates, dict[str, float]]
 
 # Sources that answer for a whole date window in one go.
 RANGE_SOURCES: Mapping[str, Fetch] = {kiwi.SOURCE: kiwi.fetch}
 
-ROUND_TRIP_PROBES = 12  # first round of round-trip searches, one per airline and airport pair
-REFINED_AIRLINES = 2  # airlines whose lowest fare gets its other likely dates searched too
-TIED_DAYS = 4  # at most this many other days searched per direction for each of those
+SWEPT_AIRPORT_PAIRS = 2  # airport pairs searched for every day out and every day back
+PROBES_PER_OTHER_PAIR = 3  # round-trip searches for each of the remaining airport pairs
+VERIFIED = 6  # date pairs predicted to be cheapest that get a search to confirm it
 MAX_SEARCHES = 120  # the endpoint is free, shared and rate-limited, so a bigger hunt is refused
 PAIRED_PER_AIRPORT = 6  # cheapest one-way offers between each two airports that get paired into trips
 FAILURES_SHOWN = 5
@@ -42,8 +44,11 @@ class Find:
 
     itinerary: Itinerary
     links: tuple[str, ...]  # where to book; two links for two one-way tickets
-    # Other (day out, day back) combinations on which the same flights cost the same.
+    # Other (day out, day back) combinations searched on which the same flights cost the same.
     same_price: tuple[tuple[date, date], ...] = ()
+    # For a fare from a swept airport pair: the days out and the days back on which it is
+    # at its lowest. Each day was searched against one day of the other direction.
+    cheap_days: tuple[tuple[date, ...], tuple[date, ...]] | None = None
 
 
 @dataclass(frozen=True)
@@ -62,24 +67,37 @@ def hunt(
 ) -> Hunt:
     """Searches every source for the trip `watch` describes; its price lines play no part.
 
-    A Skiplagged search covers a single day, so that source is worked in steps: one-way
-    searches for every day of both windows, every pairing of the cheapest one-ways, then
-    round-trip searches on the dates where round-trip fares look cheapest.
+    A Skiplagged search covers a single day, so that source is worked in steps:
+
+    1. One-way searches for every day of both windows. They show who flies when, and the
+       cheapest of them are paired into trips on two one-way tickets.
+    2. Round-trip searches, since a round-trip fare is usually far below two one-ways. The
+       airport pairs with the cheapest one-ways are swept (see _Sweep); the others get a
+       few searches on their airlines' cheapest one-way days.
+    3. A search of each date pair the sweeps predict to be cheapest, to confirm it.
     """
+    out_days, back_days = _days(watch.depart), _days(watch.ret)
     origin_groups, destination_groups = _groups(watch.origins), _groups(watch.destinations)
     out_queries = [
         skiplagged.one_way_query(origins, destinations, day, watch, currency)
-        for day in _days(watch.depart)
+        for day in out_days
         for origins in origin_groups
         for destinations in destination_groups
     ]
     back_queries = [
         skiplagged.one_way_query(destinations, origins, day, watch, currency)
-        for day in _days(watch.ret)
+        for day in back_days
         for destinations in destination_groups
         for origins in origin_groups
     ]
-    planned = len(out_queries) + len(back_queries) + ROUND_TRIP_PROBES + 2 * REFINED_AIRLINES * TIED_DAYS
+    airport_pairs = len(watch.origins) * len(watch.destinations)
+    planned = (
+        len(out_queries)
+        + len(back_queries)
+        + min(SWEPT_AIRPORT_PAIRS, airport_pairs) * (len(out_days) + len(back_days) - 1)
+        + max(0, airport_pairs - SWEPT_AIRPORT_PAIRS) * PROBES_PER_OTHER_PAIR
+        + VERIFIED
+    )
     if planned > MAX_SEARCHES:
         raise ConfigError(
             f"this hunt could take {planned} searches and the limit is {MAX_SEARCHES}: "
@@ -88,6 +106,8 @@ def hunt(
 
     failures: list[str] = []
     candidates: list[Priced] = []
+    sweeps: list[_Sweep] = []
+    quotes: Quotes = {}
     searches = 0
     try:
         answers = search(out_queries + back_queries)
@@ -96,10 +116,11 @@ def hunt(
         backs = _offers(back_queries, answers[len(out_queries) :], watch, outbound=False, failures=failures)
         candidates += _pairs(outs, backs)
 
-        prober = _Prober(backs, watch, currency, search, failures)
+        prober = _Prober(backs, watch, currency, search, failures, quotes)
         try:
-            prober.search(_first_probes(outs, backs, watch))
-            _refine(prober, outs, backs, watch)
+            sweeps, probes = _round_trip_plan(outs, backs, watch)
+            prober.search([dates for sweep in sweeps for dates in sweep.searches()] + probes)
+            prober.search(_worth_verifying(sweeps, quotes, watch))
         finally:
             searches += prober.searches
             candidates += prober.fares
@@ -113,7 +134,8 @@ def hunt(
         except SourceError as exc:
             failures.append(f"{name}: {exc}")
 
-    return Hunt(finds=_rank(candidates, watch), searches=searches, failures=tuple(failures))
+    finds = tuple(_with_cheap_days(find, sweeps, quotes) for find in _rank(candidates, watch))
+    return Hunt(finds=finds, searches=searches, failures=tuple(failures))
 
 
 def render(result: Hunt, watch: Watch, *, top: int = 10) -> str:
@@ -150,17 +172,27 @@ def render(result: Hunt, watch: Watch, *, top: int = 10) -> str:
             f"| {origin} {_row(find)}" if find else f"| {origin} | 没有查到 | | | | |"
             for origin, find in zip(watch.origins, per_origin)
         ]
+        if best.cheap_days:
+            days_out, days_back = (
+                "、".join(f"{day:%m-%d}" for day in days) for days in best.cheap_days
+            )
+            lines += [
+                "",
+                f"最低价这组航班的低价日：去程 {days_out}；回程 {days_back}。"
+                "两个方向各自逐日实查过，任意搭配按规律应同价。",
+            ]
         if best.same_price:
             lines += [
                 "",
-                "最低价的同一组航班，下面这些日期实查也是同样价格（去 / 回）："
+                "实查同价的其他日期组合（去 / 回）："
                 + "，".join(f"{out:%m-%d} / {back:%m-%d}" for out, back in best.same_price),
             ]
         lines += ["", "最低价下单：" + " 和 ".join(link for link in best.links if link)]
         if any(find and find.itinerary.inbound_assumed for find in [*shown, *per_origin]):
             lines += [
                 "",
-                "※ 回程航班待确认：这个来源的往返价只标明去程航班，表里列的是同一航司当天最便宜的回程航班。",
+                "※ 回程航班待确认：这个来源的往返价只标明去程航班，表里列的是同一航司当天最便宜的回程航班；"
+                "带问号的表示当天没查到该航司的回程航班号。",
             ]
     if result.failures:
         lines += ["", f"有 {len(result.failures)} 次搜索没有查到结果，上面的结果可能不全："]
@@ -172,29 +204,82 @@ def render(result: Hunt, watch: Watch, *, top: int = 10) -> str:
     return "\n".join(lines) + "\n"
 
 
+@dataclass(frozen=True)
+class _Sweep:
+    """Round-trip searches along both date axes of one airport pair.
+
+    Every day out is searched against one day back, and every day back against one day
+    out; those two fixed days are the pivots. A round-trip fare is close to a price for
+    its day out plus a price for its day back, so the two axes show which days are cheap
+    in each direction. That gives the cheapest combination even when it lies on neither
+    axis, at a search per day instead of a search per pair of days.
+    """
+
+    origin: str
+    destination: str
+    out_days: tuple[date, ...]  # the days with a flight out
+    back_days: tuple[date, ...]
+    pivot_out: date
+    pivot_back: date
+
+    def searches(self) -> list[Dates]:
+        along_out = [(self.origin, self.destination, day, self.pivot_back) for day in self.out_days]
+        along_back = [(self.origin, self.destination, self.pivot_out, day) for day in self.back_days]
+        return along_out + along_back  # the pivots appear on both axes; the prober searches them once
+
+    def axes(self, quotes: Quotes) -> dict[str, tuple[dict[date, float], dict[date, float], float]]:
+        """For each outbound flight quoted at the pivots: its fare by day out, by day back, and at the pivots."""
+        found = {}
+        at_pivots = quotes.get((self.origin, self.destination, self.pivot_out, self.pivot_back), {})
+        for flight, fare in at_pivots.items():
+            by_out = {
+                day: quotes[dates][flight]
+                for day in self.out_days
+                if flight in quotes.get(dates := (self.origin, self.destination, day, self.pivot_back), {})
+            }
+            by_back = {
+                day: quotes[dates][flight]
+                for day in self.back_days
+                if flight in quotes.get(dates := (self.origin, self.destination, self.pivot_out, day), {})
+            }
+            found[flight] = (by_out, by_back, fare)
+        return found
+
+
 class _Prober:
     """Runs round-trip searches on Skiplagged, never the same airports and dates twice."""
 
-    def __init__(self, backs: Sequence[Offer], watch: Watch, currency: str, search: Search, failures: list[str]):
+    def __init__(
+        self,
+        backs: Sequence[Offer],
+        watch: Watch,
+        currency: str,
+        search: Search,
+        failures: list[str],
+        quotes: Quotes,
+    ):
         self.fares: list[Priced] = []
         self.searches = 0
-        self._searched: set[Dates] = set()
+        self._quotes = quotes  # filled in as searches are made; an empty entry means nothing was quoted
         self._backs, self._watch, self._currency = backs, watch, currency
         self._search, self._failures = search, failures
 
     def search(self, plan: Iterable[Dates]) -> None:
-        todo = [dates for dates in dict.fromkeys(plan) if dates not in self._searched]
+        todo = [dates for dates in dict.fromkeys(plan) if dates not in self._quotes]
         if not todo:
             return
-        self._searched.update(todo)
         queries = [skiplagged.round_trip_query(*dates, self._watch, self._currency) for dates in todo]
+        for dates in todo:
+            self._quotes[dates] = {}
         answers = self._search(queries)
         self.searches += len(answers)
-        for (_, _, _, back_day), query, answer in zip(todo, queries, answers):
+        for dates, query, answer in zip(todo, queries, answers):
             for offer in _parse(query, answer, self._watch, self._failures):
-                fare = _round_trip(offer, back_day, self._backs, self._watch)
-                if fare:
-                    self.fares.append(fare)
+                if not _fits(offer.leg, self._watch, outbound=True):
+                    continue
+                flight = offer.leg.flights
+                self._quotes[dates][flight] = min(offer.price, self._quotes[dates].get(flight, offer.price))
+                self.fares.append(_round_trip(offer, dates[3], self._backs))
 
 
 def _offers(
@@ -251,89 +336,138 @@ def _pairs(outs: Sequence[Offer], backs: Sequence[Offer]) -> list[Priced]:
     ]
 
 
-def _first_probes(outs: Sequence[Offer], backs: Sequence[Offer], watch: Watch) -> list[Dates]:
-    """Where to look for round-trip fares first.
+def _round_trip_plan(
+    outs: Sequence[Offer], backs: Sequence[Offer], watch: Watch
+) -> tuple[list[_Sweep], list[Dates]]:
+    """Which airport pairs to sweep, and the single searches for the rest.
 
-    A round-trip fare is usually far below two one-ways, but pricing every date pair would
-    take a search each. An airline's cheapest one-way days are mostly the days its cheapest
-    round-trip fares are sold, so each airline flying both directions between two airports
-    gets one search, on its cheapest one-way day out and its cheapest one-way day back.
-    Every pair of airports gets its most promising airline searched before any pair gets
-    a second one, so an expensive origin is not crowded out by a cheap one.
+    The pairs with the cheapest one-way totals are swept, as cheap one-ways mark the
+    routes where airlines are undercutting each other. Every other pair gets a search per
+    airline on that airline's cheapest one-way day out and day back: a weaker guess, since
+    a cheap one-way day is usually, not always, a cheap round-trip day.
     """
-    best_out = _cheapest_per_route(outs, outbound=True, centre=_middle(watch.depart))
-    best_back = _cheapest_per_route(backs, outbound=False, centre=_middle(watch.ret))
-    by_airports: dict[tuple[str, str], list[Route]] = defaultdict(list)
-    for route in sorted(
-        best_out.keys() & best_back.keys(), key=lambda route: (best_out[route].price + best_back[route].price, route)
-    ):
-        by_airports[route[:2]].append(route)
-    in_turn = sorted(
-        (turn, best_out[route].price + best_back[route].price, route)
-        for routes in by_airports.values()
-        for turn, route in enumerate(routes)
-    )
-    plan = [
-        (route[0], route[1], best_out[route].leg.departure_date, best_back[route].leg.departure_date)
-        for _, _, route in in_turn
+    centre_out, centre_back = _middle(watch.depart), _middle(watch.ret)
+    flights_out: dict[Airports, list[Offer]] = defaultdict(list)
+    flights_back: dict[Airports, list[Offer]] = defaultdict(list)
+    for offer in outs:
+        flights_out[(offer.leg.origin, offer.leg.destination)].append(offer)
+    for offer in backs:  # filed under the trip it serves: a flight LAX-HKG belongs to (HKG, LAX)
+        flights_back[(offer.leg.destination, offer.leg.origin)].append(offer)
+
+    def one_way_total(pair: Airports) -> float:
+        return min(o.price for o in flights_out[pair]) + min(o.price for o in flights_back[pair])
+
+    served = sorted(flights_out.keys() & flights_back.keys(), key=lambda pair: (one_way_total(pair), pair))
+    sweeps = [
+        _Sweep(
+            origin=pair[0],
+            destination=pair[1],
+            out_days=tuple(sorted({offer.leg.departure_date for offer in flights_out[pair]})),
+            back_days=tuple(sorted({offer.leg.departure_date for offer in flights_back[pair]})),
+            pivot_out=_cheapest_day(flights_out[pair], centre_out),
+            pivot_back=_cheapest_day(flights_back[pair], centre_back),
+        )
+        for pair in served[:SWEPT_AIRPORT_PAIRS]
     ]
-    return list(dict.fromkeys(plan))[:ROUND_TRIP_PROBES]
+    probes: list[Dates] = []
+    for pair in served[SWEPT_AIRPORT_PAIRS:]:
+        by_airline_out: dict[str, list[Offer]] = defaultdict(list)
+        by_airline_back: dict[str, list[Offer]] = defaultdict(list)
+        for offer in flights_out[pair]:
+            by_airline_out[_airline(offer)].append(offer)
+        for offer in flights_back[pair]:
+            by_airline_back[_airline(offer)].append(offer)
+        both_ways = sorted(
+            by_airline_out.keys() & by_airline_back.keys(),
+            key=lambda airline: (
+                min(o.price for o in by_airline_out[airline]) + min(o.price for o in by_airline_back[airline]),
+                airline,
+            ),
+        )
+        of_pair = [
+            (*pair, _cheapest_day(by_airline_out[airline], centre_out), _cheapest_day(by_airline_back[airline], centre_back))
+            for airline in both_ways
+        ]
+        probes += list(dict.fromkeys(of_pair))[:PROBES_PER_OTHER_PAIR]
+    return sweeps, probes
 
 
-def _refine(prober: _Prober, outs: Sequence[Offer], backs: Sequence[Offer], watch: Watch) -> None:
-    """Searches the other likely dates of the airlines with the lowest round-trip fares.
+def _worth_verifying(sweeps: Sequence[_Sweep], quotes: Quotes, watch: Watch) -> list[Dates]:
+    """The date pairs the sweeps predict to be cheapest that no search has covered, best first.
 
-    "Mostly" in _first_probes is not "always": a day can be among an airline's cheapest
-    one-way days and still lack its cheapest round-trip fare. So for the leading airlines
-    every day tied for cheapest one-way is searched: first the days back against the day
-    out already found, then the days out against the best day back. That corrects a first
-    probe that landed on such a day, and shows on which other dates the fare exists.
+    For each flight, the cheapest day out and the cheapest day back are known from the two
+    axes. Their fare together is predicted as the sum of the two axis fares less the fare
+    at the pivots, which both of them include.
     """
-    for sweep_back in (True, False):
-        plan: list[Dates] = []
-        for route, best in _leaders(prober.fares):
-            origin, destination, _ = route
-            if sweep_back:
-                days = _tied_days(backs, route, outbound=False, centre=_middle(watch.ret))
-                plan += [(origin, destination, best.outbound.departure_date, day) for day in days]
-            else:
-                days = _tied_days(outs, route, outbound=True, centre=_middle(watch.depart))
-                plan += [(origin, destination, day, best.inbound.departure_date) for day in days]
-        prober.search(plan)
+    predicted: list[tuple[float, Dates]] = []
+    for sweep in sweeps:
+        for by_out, by_back, at_pivots in sweep.axes(quotes).values():
+            if not by_out or not by_back:
+                continue
+            day_out = _cheapest_key(by_out, _middle(watch.depart))
+            day_back = _cheapest_key(by_back, _middle(watch.ret))
+            dates = (sweep.origin, sweep.destination, day_out, day_back)
+            if dates not in quotes:
+                predicted.append((by_out[day_out] + by_back[day_back] - at_pivots, dates))
+    return list(dict.fromkeys(dates for _, dates in sorted(predicted)))[:VERIFIED]
 
 
-def _leaders(fares: Sequence[Priced]) -> list[tuple[Route, Itinerary]]:
-    """The routes with the lowest round-trip fares so far, each with its cheapest itinerary."""
-    best: dict[Route, Itinerary] = {}
-    for itinerary, _ in fares:
-        leg = itinerary.outbound
-        route = (leg.origin, leg.destination, leg.segments[0].carrier)
-        if route not in best or itinerary.price < best[route].price:
-            best[route] = itinerary
-    return sorted(best.items(), key=lambda entry: (entry[1].price, entry[0]))[:REFINED_AIRLINES]
+def _with_cheap_days(find: Find, sweeps: Sequence[_Sweep], quotes: Quotes) -> Find:
+    """Adds, to a round-trip fare from a swept airport pair, the days on which it is at its lowest."""
+    itinerary = find.itinerary
+    if itinerary.source != skiplagged.SOURCE or itinerary.separate_tickets:
+        return find
+    for sweep in sweeps:
+        if (sweep.origin, sweep.destination) != (itinerary.outbound.origin, itinerary.outbound.destination):
+            continue
+        axes = sweep.axes(quotes).get(itinerary.outbound.flights)
+        if axes and axes[0] and axes[1]:
+            by_out, by_back, _ = axes
+            return replace(
+                find,
+                cheap_days=(
+                    tuple(sorted(day for day, fare in by_out.items() if fare == min(by_out.values()))),
+                    tuple(sorted(day for day, fare in by_back.items() if fare == min(by_back.values()))),
+                ),
+            )
+    return find
 
 
-def _round_trip(offer: Offer, back_day: date, backs: Sequence[Offer], watch: Watch) -> Priced | None:
-    """A round-trip fare with the return flight it most likely includes, or None if that cannot be told."""
-    if not _fits(offer.leg, watch, outbound=True):
-        return None
+def _round_trip(offer: Offer, back_day: date, backs: Sequence[Offer]) -> Priced:
+    """A round-trip fare with the return flight it most likely includes.
+
+    That is the same airline's cheapest one-way flight back that day. When the one-way
+    searches found none (a gap in their data, or a codeshare number sold only one way) the
+    fare is still real, so it is kept with the return flight left open, e.g. "UA?".
+    """
+    airline = _airline(offer)
     returns = [
-        back
-        for back in backs
+        back.leg
+        for back in sorted(backs, key=lambda candidate: (candidate.price, candidate.leg.departure))
         if back.leg.origin == offer.leg.destination
         and back.leg.destination == offer.leg.origin
         and back.leg.departure_date == back_day
-        and _airline(back) == _airline(offer)
+        and _airline(back) == airline
     ]
-    if not returns:  # e.g. a codeshare flight number that is only sold one way
-        return None
-    back = min(returns, key=lambda candidate: (candidate.price, candidate.leg.departure))
+    open_return = Leg(
+        (
+            Segment(
+                carrier=airline,
+                flight_number=f"{airline}?",
+                origin=offer.leg.destination,
+                destination=offer.leg.origin,
+                departure=back_day.isoformat(),  # the day is known, the time is not
+                arrival=skiplagged.UNKNOWN,
+                cabin=offer.leg.segments[0].cabin,
+            ),
+        )
+    )
     itinerary = Itinerary(
         source=skiplagged.SOURCE,
         price=offer.price,
         currency=offer.currency,
         outbound=offer.leg,
-        inbound=back.leg,
+        inbound=returns[0] if returns else open_return,
         booking_url=offer.url,
         inbound_assumed=True,
     )
@@ -424,37 +558,15 @@ def _fits(leg: Leg, watch: Watch, *, outbound: bool) -> bool:
     )
 
 
-def _route_of(offer: Offer, *, outbound: bool) -> Route:
-    """The route an offer serves, named from the trip's point of view: a flight back from
-    LAX to HKG belongs to the route (HKG, LAX, airline)."""
-    leg = offer.leg
-    ends = (leg.origin, leg.destination) if outbound else (leg.destination, leg.origin)
-    return (*ends, _airline(offer))
+def _cheapest_day(offers: Sequence[Offer], centre: date) -> date:
+    """The day of the cheapest offer; between equal prices, the day nearest `centre`."""
+    best = min(offers, key=lambda offer: (offer.price, abs((offer.leg.departure_date - centre).days), offer.leg.departure))
+    return best.leg.departure_date
 
 
-def _cheapest_per_route(offers: Sequence[Offer], *, outbound: bool, centre: date) -> dict[Route, Offer]:
-    """The cheapest offer on each route; between equal prices, the day nearest `centre`."""
-    best: dict[Route, tuple[tuple[float, int, str], Offer]] = {}
-    for offer in offers:
-        route = _route_of(offer, outbound=outbound)
-        rank = (offer.price, abs((offer.leg.departure_date - centre).days), offer.leg.departure)
-        if route not in best or rank < best[route][0]:
-            best[route] = (rank, offer)
-    return {route: offer for route, (_, offer) in best.items()}
-
-
-def _tied_days(offers: Sequence[Offer], route: Route, *, outbound: bool, centre: date) -> list[date]:
-    """The days on which the route's one-way price is at its lowest, nearest `centre` first."""
-    cheapest: dict[date, float] = {}
-    for offer in offers:
-        if _route_of(offer, outbound=outbound) == route:
-            day = offer.leg.departure_date
-            cheapest[day] = min(offer.price, cheapest.get(day, offer.price))
-    if not cheapest:
-        return []
-    floor = min(cheapest.values())
-    tied = [day for day, price in cheapest.items() if price == floor]
-    return sorted(tied, key=lambda day: (abs((day - centre).days), day))[: TIED_DAYS + 1]
+def _cheapest_key(fares: Mapping[date, float], centre: date) -> date:
+    """The day with the lowest fare; between equal fares, the day nearest `centre`."""
+    return min(fares, key=lambda day: (fares[day], abs((day - centre).days), day))
 
 
 def _row(find: Find) -> str:
@@ -467,7 +579,8 @@ def _row(find: Find) -> str:
 
 def _describe(leg: Leg) -> str:
     day = leg.departure_date
-    return f"{leg.flights} {alerts.route(leg)} {day:%m-%d} 周{WEEKDAYS[day.weekday()]} {leg.departure[11:16]}"
+    time = leg.departure[11:16]  # empty for a return flight left open
+    return f"{leg.flights} {alerts.route(leg)} {day:%m-%d} 周{WEEKDAYS[day.weekday()]} {time}".rstrip()
 
 
 def _aircraft(leg: Leg) -> tuple[str, str, str, int]:

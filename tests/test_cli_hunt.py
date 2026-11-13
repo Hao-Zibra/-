@@ -73,10 +73,10 @@ def test_hunt_rejects_options_that_make_no_trip(monkeypatch, capsys):
 
 
 def test_hunt_reports_a_search_too_big_to_run(monkeypatch, capsys):
-    stub_hunt(monkeypatch, error=ConfigError("this hunt could take 126 searches and the limit is 120"))
+    stub_hunt(monkeypatch, error=ConfigError("this hunt could take 184 searches and the limit is 120"))
 
     assert cli.main(ARGS) == 2
-    assert "could take 126 searches" in capsys.readouterr().err
+    assert "could take 184 searches" in capsys.readouterr().err
 
 
 def test_hunt_fails_only_when_nothing_was_found_because_searches_failed(monkeypatch, capsys):

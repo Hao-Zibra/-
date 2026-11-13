@@ -1,13 +1,16 @@
 """Prices from Skiplagged's public flight-search MCP endpoint. It needs no API key.
 
-Unlike Kiwi it covers the US carriers, and its round-trip prices matched Expedia's to the
-dollar when checked in November 2026. Two things shape how it is used:
+Unlike Kiwi it covers the US carriers, and in November 2026 its round-trip prices were
+usually within a dollar of Expedia's. Three things shape how it is used:
 
 - A search covers one departure date (and one return date), so a date window takes one
   search per day.
 - A round-trip result names the outbound flight and the cheapest round-trip total that
   starts with it, but not the return flight that total is for. The return flight printed
   on the card is only the cheapest one-way flight that day.
+- Its answers fluctuate. Within a few hours the same dates were quoted at one fare, then
+  65% higher, then at the first fare again, while Expedia's price did not move. A day's
+  one-way list can also be missing an airline that flies that day.
 """
 
 from __future__ import annotations
