@@ -1,0 +1,11 @@
+{
+ "smoke-test": {
+  "issue": 1,
+  "last": {
+   "alerted_at": "2026-11-13T18:48:17+00:00",
+   "currency": "USD",
+   "flights": "CX880@2027-03-11 / CX883@2027-04-07",
+   "price": 9414.0
+  }
+ }
+}
