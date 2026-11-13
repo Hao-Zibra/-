@@ -1,8 +1,9 @@
 # Not a real watch: the price line is so high that every offer is under it. Scan this file to
 # check that an alert is delivered end to end (Actions tab > farewatch > Run workflow, with
-# watchlist set to examples/smoke.yaml).
+# watchlist set to examples/smoke.yaml). The watch name goes into the alert's title, so it
+# says outright that the alert is a test.
 watches:
-  - name: smoke-test
+  - name: 送达测试-请忽略
     origins: [HKG]
     destinations: [LAX]
     depart: {from: 2027-03-10, to: 2027-03-16}
