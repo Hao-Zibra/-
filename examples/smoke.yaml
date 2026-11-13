@@ -1,0 +1,12 @@
+# Not a real watch: the price line is so high that every offer is under it. Scan this file to
+# check that an alert is delivered end to end (Actions tab > farewatch > Run workflow, with
+# watchlist set to examples/smoke.yaml).
+watches:
+  - name: smoke-test
+    origins: [HKG]
+    destinations: [LAX]
+    depart: {from: 2027-03-10, to: 2027-03-16}
+    return: {from: 2027-04-07, to: 2027-04-13}
+    cabin: business
+    nonstop: true
+    alert_below: {USD: 1000000}

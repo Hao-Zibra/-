@@ -1,0 +1,54 @@
+name: farewatch
+
+on:
+  workflow_dispatch:
+    inputs:
+      watchlist:
+        description: Watchlist file to scan
+        default: watchlist.yaml
+      github_issues:
+        description: Deliver alerts as GitHub issues
+        type: boolean
+        default: true
+
+permissions:
+  contents: write # push scan history to the data branch
+  issues: write # open and update alert issues
+
+# Scans share the data branch, so they run one at a time.
+concurrency:
+  group: farewatch
+  cancel-in-progress: false
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      DATA_BRANCH: farewatch-data
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Install uv
+        run: pipx install uv
+
+      - name: Install dependencies
+        run: uv sync --locked --no-dev
+
+      - name: Check out the data branch
+        id: data
+        run: scripts/data-branch.sh checkout data
+
+      - name: Scan
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          WATCHLIST: ${{ inputs.watchlist || 'watchlist.yaml' }}
+          GITHUB_ISSUES: ${{ inputs.github_issues }}
+        run: |
+          # A scheduled run has no inputs: it scans watchlist.yaml and delivers issues.
+          if [ "$GITHUB_ISSUES" = "false" ]; then issues=(); else issues=(--github-issues); fi
+          uv run --no-dev python -m farewatch scan --watchlist "$WATCHLIST" --data-dir data "${issues[@]}"
+
+      - name: Save history
+        if: ${{ !cancelled() && steps.data.outcome == 'success' }}
+        run: scripts/data-branch.sh save data

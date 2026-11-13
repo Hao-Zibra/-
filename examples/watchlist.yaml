@@ -1,0 +1,16 @@
+# Template. Copy to watchlist.yaml in the repository root and edit.
+#
+# Each watch is one round trip: leave from any of `origins` inside the `depart` window, fly to
+# any of `destinations`, and fly back inside the `return` window. An alert is raised when the
+# total price for all passengers is below the line set for the currency the offer is quoted in.
+watches:
+  - name: china-lax-spring
+    origins: [HKG, PVG, PEK, CAN, XMN, TFU]
+    destinations: [LAX]
+    depart: {from: 2027-03-10, to: 2027-03-16}
+    return: {from: 2027-04-07, to: 2027-04-13}
+    cabin: business # economy | premium_economy | business | first
+    nonstop: true # false also accepts connecting flights
+    adults: 1
+    open_jaw: true # true: may fly back to a different origin airport than the trip started from
+    alert_below: {USD: 4000, CNY: 28000}

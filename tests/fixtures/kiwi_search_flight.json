@@ -1,0 +1,128 @@
+{
+ "query": "HKG → LAX on 08/02/2027–14/02/2027, returning 22/02/2027–28/02/2027, 1 adult, business [≤1 stops/sector; no self-transfer]",
+ "currency": "USD",
+ "passengers": {
+  "adults": 1,
+  "children": 0,
+  "infants": 0
+ },
+ "resultsCount": 1,
+ "searchTimeMs": 5531,
+ "error": null,
+ "itineraries": [
+  {
+   "id": "1337243e517951877c20c2d9_0|1337243e517951877c20c2d9_1|1337243e517951877c20c2d9_2|1337243e517951877c20c2d9_3",
+   "tripType": "return",
+   "price": 3736.0,
+   "priceFormatted": "3736 USD",
+   "totalDurationSeconds": 129900,
+   "bookingUrl": "https://kiwi.com/u/example",
+   "imageId": "los-angeles_ca_us",
+   "baggage": {
+    "personalItem": 1,
+    "cabinBag": 1,
+    "checkedBag": 2
+   },
+   "outbound": {
+    "from": "HKG",
+    "to": "LAX",
+    "departureTime": "2027-02-08T19:05:00",
+    "arrivalTime": "2027-02-08T19:10:00",
+    "durationSeconds": 57900,
+    "stops": 1,
+    "route": [
+     "HKG",
+     "MNL",
+     "LAX"
+    ],
+    "cabinClass": "Business",
+    "segments": [
+     {
+      "from": "HKG",
+      "to": "MNL",
+      "fromCity": "Hong Kong",
+      "toCity": "Manila",
+      "fromName": "Hong Kong International",
+      "toName": "Ninoy Aquino International",
+      "fromCountry": "Hong Kong",
+      "toCountry": "Philippines",
+      "departureTime": "2027-02-08T19:05:00",
+      "arrivalTime": "2027-02-08T21:20:00",
+      "durationSeconds": 8100,
+      "carrier": "PR",
+      "carrierName": "Philippine Airlines",
+      "flightNumber": "PR307",
+      "cabinClass": "Business"
+     },
+     {
+      "from": "MNL",
+      "to": "LAX",
+      "fromCity": "Manila",
+      "toCity": "Los Angeles",
+      "fromName": "Ninoy Aquino International",
+      "toName": "Los Angeles International",
+      "fromCountry": "Philippines",
+      "toCountry": "United States",
+      "departureTime": "2027-02-08T22:15:00",
+      "arrivalTime": "2027-02-08T19:10:00",
+      "durationSeconds": 46500,
+      "carrier": "PR",
+      "carrierName": "Philippine Airlines",
+      "flightNumber": "PR102",
+      "cabinClass": "Business"
+     }
+    ]
+   },
+   "inbound": {
+    "from": "LAX",
+    "to": "HKG",
+    "departureTime": "2027-02-22T22:05:00",
+    "arrivalTime": "2027-02-24T10:05:00",
+    "durationSeconds": 72000,
+    "stops": 1,
+    "route": [
+     "LAX",
+     "MNL",
+     "HKG"
+    ],
+    "cabinClass": "Business",
+    "segments": [
+     {
+      "from": "LAX",
+      "to": "MNL",
+      "fromCity": "Los Angeles",
+      "toCity": "Manila",
+      "fromName": "Los Angeles International",
+      "toName": "Ninoy Aquino International",
+      "fromCountry": "United States",
+      "toCountry": "Philippines",
+      "departureTime": "2027-02-22T22:05:00",
+      "arrivalTime": "2027-02-24T05:35:00",
+      "durationSeconds": 55800,
+      "carrier": "PR",
+      "carrierName": "Philippine Airlines",
+      "flightNumber": "PR103",
+      "cabinClass": "Business"
+     },
+     {
+      "from": "MNL",
+      "to": "HKG",
+      "fromCity": "Manila",
+      "toCity": "Hong Kong",
+      "fromName": "Ninoy Aquino International",
+      "toName": "Hong Kong International",
+      "fromCountry": "Philippines",
+      "toCountry": "Hong Kong",
+      "departureTime": "2027-02-24T07:50:00",
+      "arrivalTime": "2027-02-24T10:05:00",
+      "durationSeconds": 8100,
+      "carrier": "PR",
+      "carrierName": "Philippine Airlines",
+      "flightNumber": "PR300",
+      "cabinClass": "Business"
+     }
+    ]
+   }
+  }
+ ]
+}

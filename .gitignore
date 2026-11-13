@@ -1,0 +1,6 @@
+.venv/
+__pycache__/
+.pytest_cache/
+
+# Scan history lives on its own branch; CI checks that branch out here.
+data/
